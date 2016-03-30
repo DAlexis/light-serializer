@@ -12,14 +12,17 @@ add_definitions( -DGIT_COMMIT_TAG=${git_commit} )
 
 # This is to run all tests using 'make run-unit-tests' command.
 # Another way is simply run 'ctest -VV', but output is not colorized by default :(
-add_custom_target(run-unit-tests)
-macro(run_test test_target)
-  add_custom_target(${test_target}_runtest
-      COMMAND ${test_target}
-      DEPENDS ${test_target}
-      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
-  add_dependencies(run-unit-tests ${test_target}_runtest)
-endmacro()
+# This project may be a part of other cmake project so this trik ma be implementerd yet
+if (NOT COMMAND run_test)
+	add_custom_target(run-unit-tests)
+	macro(run_test test_target)
+	  add_custom_target(${test_target}_runtest
+	      COMMAND ${test_target}
+	      DEPENDS ${test_target}
+	      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+	  add_dependencies(run-unit-tests ${test_target}_runtest)
+	endmacro()
+endif()
 
 ## This macro creates variable ${PROJECT_NAME}_INCLUDE_DIRS with list of 
 # include directories exported by project
