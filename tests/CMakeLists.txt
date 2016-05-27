@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 project(serialization-unit-tests)
 
 find_package (GTest REQUIRED)
+find_package (Threads)
 
 include_directories (
     ${serialization-utils_INCLUDE_DIRS}
@@ -16,9 +17,10 @@ set(EXE_SOURCES
 add_executable(${PROJECT_NAME} ${EXE_SOURCES})
 
 target_link_libraries (${PROJECT_NAME}
-    ${serialization-utils_LIBRARY}
     gtest
     gtest_main
+    ${serialization-utils_LIBRARY}
+    ${CMAKE_THREAD_LIBS_INIT}
 )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_constexpr)
