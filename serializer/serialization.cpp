@@ -7,3 +7,4 @@
 
 #include "serialization.hpp"
 
+using namespace lightser;

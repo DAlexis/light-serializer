@@ -15,6 +15,15 @@
 #include <cstdint>
 #include <cstring>
 
+namespace lightser
+{
+
+template<typename T>
+void zerify(T& object)
+{
+	memset(&object, 0, sizeof(T));
+}
+
 template<typename T>
 void putAndInc(void*& pointer, const T& object)
 {
@@ -54,7 +63,7 @@ public:
 			throw std::logic_error("ByteStreamWrapper: Cannot read from nullptr buffer");
 	}
 
-	size_t size()
+	size_t size() const
 	{
 		if (m_direction == toBuffer)
 			return m_buffer == nullptr ? m_spaceToPut.size() : m_offset;
@@ -67,10 +76,10 @@ public:
 		return m_buffer == nullptr ? m_spaceToPut.data() : m_buffer;
 	}
 
-	uint8_t direction() { return m_direction; }
+	uint8_t direction() const { return m_direction; }
 
 	template<typename T>
-	ByteStreamWrapper& operator&(T& object)
+	void doSerDeser(T& object)
 	{
 		switch(m_direction)
 		{
@@ -101,12 +110,11 @@ public:
 			m_offset += sizeof(T);
 			break;
 		}
-		return *this;
 	}
 
-	ByteStreamWrapper& operator&(IBinarySerializable&& serializer)
+	void doSerDeser(IBinarySerializable& object)
 	{
-		size_t objSize = serializer.size();
+		size_t objSize = object.size();
 		switch(m_direction)
 		{
 		case toBuffer:
@@ -116,12 +124,12 @@ public:
 				if (m_streamSize - m_offset < objSize)
 					throw std::out_of_range("ByteStreamWrapper: Not enough space in byte stream");
 
-				serializer.serialize(&m_buffer[m_offset]);
+				object.serialize(&m_buffer[m_offset]);
 				m_offset += objSize;
 			} else {
 				// We deal with vector
 				m_spaceToPut.resize(m_offset + objSize);
-				serializer.serialize(&m_spaceToPut[m_offset]);
+				object.serialize(&m_spaceToPut[m_offset]);
 				m_offset += objSize;
 			}
 			break;
@@ -129,7 +137,7 @@ public:
 		case fromBuffer:
 			if (m_streamSize - m_offset < objSize)
 				throw std::out_of_range("ByteStreamWrapper: Stream tail is smaller than requested object");
-			serializer.deserialize(&m_buffer[m_offset]);
+			object.deserialize(&m_buffer[m_offset]);
 			m_offset += objSize;
 			break;
 
@@ -137,16 +145,42 @@ public:
 			m_offset += objSize;
 			break;
 		}
+	}
+
+	template<typename T>
+	ByteStreamWrapper& operator&(T& object)
+	{
+		doSerDeser(object);
+		return *this;
+	}
+
+	ByteStreamWrapper& operator&(IBinarySerializable& object)
+	{
+		doSerDeser(object);
+		return *this;
+	}
+
+	ByteStreamWrapper& operator&(IBinarySerializable&& object)
+	{
+		doSerDeser(object);
 		return *this;
 	}
 
 private:
+
 	uint8_t* m_buffer;
 	uint8_t m_direction;
 	size_t m_streamSize;
 	size_t m_offset = 0;
 
 	std::vector<uint8_t> m_spaceToPut;
+};
+
+class IBSWFriendly
+{
+public:
+	virtual ~IBSWFriendly() {}
+	virtual void serDeser(ByteStreamWrapper& bsw) = 0;
 };
 
 template<typename T>
@@ -216,5 +250,7 @@ public:
 private:
 	std::vector<T>& m_obj;
 };
+
+}
 
 #endif /* UTILS_SERIALIZATION_SERIALIZATION_HPP_ */

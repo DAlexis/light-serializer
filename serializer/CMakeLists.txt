@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(serialization-utils)
+project(light-serializer)
 
 set(LIB_SOURCE serialization.cpp)
 
