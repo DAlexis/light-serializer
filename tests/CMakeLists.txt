@@ -6,7 +6,7 @@ find_package (GTest REQUIRED)
 find_package (Threads)
 
 include_directories (
-    ${serialization-utils_INCLUDE_DIRS}
+    ${light-serializer_INCLUDE_DIRS}
     ${GTEST_INCLUDE_DIR}
 )
 
@@ -19,7 +19,7 @@ add_executable(${PROJECT_NAME} ${EXE_SOURCES})
 target_link_libraries (${PROJECT_NAME}
     gtest
     gtest_main
-    ${serialization-utils_LIBRARY}
+    ${light-serializer_LIBRARY}
     ${CMAKE_THREAD_LIBS_INIT}
 )
 
