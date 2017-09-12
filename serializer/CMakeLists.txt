@@ -2,7 +2,11 @@ cmake_minimum_required(VERSION 2.8)
 
 project(light-serializer)
 
-set(LIB_SOURCE serialization.cpp)
+set(LIB_SOURCE
+	serialization.cpp
+
+	serialization.hpp
+)
 
 set(${PROJECT_NAME}_USED_INCDIRS
     ${utils_INCLUDE_DIRS}
@@ -21,4 +25,8 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_constexpr)
 export_include_dirs(
     ${PROJECT_SOURCE_DIR}
     ${${PROJECT_NAME}_USED_INCDIRS}
+)
+
+export_libs(
+	${PROJECT_NAME}
 )

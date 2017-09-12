@@ -10,6 +10,7 @@
 
 #include "serialization.hpp"
 #include <string>
+#include <sstream>
 #include <math.h>
 
 using namespace std;
@@ -38,9 +39,9 @@ TEST(ByteStreamWrapper, SimpleTypesDynamicArray)
 	ASSERT_NO_THROW(deser & b1);
 	ASSERT_NO_THROW(deser & c1);
 
-	ASSERT_EQ(a0, a1);
-	ASSERT_EQ(b0, b1);
-	ASSERT_EQ(c0, c1);
+    EXPECT_EQ(a0, a1);
+    EXPECT_EQ(b0, b1);
+    EXPECT_EQ(c0, c1);
 }
 
 TEST(ByteStreamWrapper, SimpleTypesStaticArray)
@@ -53,19 +54,27 @@ TEST(ByteStreamWrapper, SimpleTypesStaticArray)
 	double b0 = 3.1415, b1 = 0;
 	char   c0 = 75,     c1 = 0;
 
+    ASSERT_TRUE(bsw.empty());
+
 	ASSERT_NO_THROW(bsw & a0);
 	ASSERT_NO_THROW(bsw & b0);
 	ASSERT_NO_THROW(bsw & c0);
 
+    ASSERT_FALSE(bsw.empty());
+
 	ByteStreamWrapper deser(bsw.buffer(), ByteStreamWrapper::fromBuffer, bsw.size());
+
+    ASSERT_FALSE(deser.empty());
 
 	ASSERT_NO_THROW(deser & a1);
 	ASSERT_NO_THROW(deser & b1);
 	ASSERT_NO_THROW(deser & c1);
 
-	ASSERT_EQ(a0, a1);
-	ASSERT_EQ(b0, b1);
-	ASSERT_EQ(c0, c1);
+    ASSERT_TRUE(deser.empty());
+
+    EXPECT_EQ(a0, a1);
+    EXPECT_EQ(b0, b1);
+    EXPECT_EQ(c0, c1);
 }
 
 TEST(ByteStreamWrapper, SizeTest)
@@ -110,4 +119,33 @@ TEST(ByteStreamWrapper, VectorTest)
 	ASSERT_NO_THROW(deser & Serializer<std::vector<int>>(v1));
 
 	ASSERT_EQ(v0, v1);
+}
+
+TEST(ByteStreamWrapper, StreamTest)
+{
+    size_t size = 20;
+    uint8_t buffer[size];
+
+    ByteStreamWrapper bsw(buffer, ByteStreamWrapper::toBuffer, size);
+    int    a0 = 25,     a1 = 0;
+    double b0 = 3.1415, b1 = 0;
+    char   c0 = 75,     c1 = 0;
+
+    ASSERT_NO_THROW(bsw & a0);
+    ASSERT_NO_THROW(bsw & b0);
+    ASSERT_NO_THROW(bsw & c0);
+
+    stringstream ss;
+    ASSERT_NO_THROW(ss << bsw);
+
+    ASSERT_NO_THROW(ByteStreamWrapper(ss));
+    ByteStreamWrapper deser(ss);
+
+    ASSERT_NO_THROW(deser & a1);
+    ASSERT_NO_THROW(deser & b1);
+    ASSERT_NO_THROW(deser & c1);
+
+    EXPECT_EQ(a0, a1);
+    EXPECT_EQ(b0, b1);
+    EXPECT_EQ(c0, c1);
 }

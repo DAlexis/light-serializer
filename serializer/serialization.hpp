@@ -11,9 +11,17 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <istream>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+
+#define LIGHTSER_WRAP_STDEXCEPT(Name) \
+    class Name : public std::Name \
+    { \
+    public: \
+      explicit Name(const std::string& __arg) : std::Name(__arg) {} \
+    }
 
 namespace lightser
 {
@@ -54,29 +62,16 @@ public:
 	constexpr static uint8_t fromBuffer = 1;
 	constexpr static uint8_t sizeCalculator = 2;
 
-	ByteStreamWrapper(void* buffer = nullptr, uint8_t direction = toBuffer, size_t streamSize = 0) :
-		m_buffer(static_cast<uint8_t*>(buffer)),
-		m_direction(direction),
-		m_streamSize(streamSize)
-	{
-		if (buffer == nullptr && direction == fromBuffer)
-			throw std::logic_error("ByteStreamWrapper: Cannot read from nullptr buffer");
-	}
+    ByteStreamWrapper(std::istream& file);
+    ByteStreamWrapper(void* buffer = nullptr, uint8_t direction = toBuffer, size_t streamSize = 0);
+    size_t size() const;
+    void* buffer();
+    bool empty() const;
+    uint8_t direction() const;
 
-	size_t size() const
-	{
-		if (m_direction == toBuffer)
-			return m_buffer == nullptr ? m_spaceToPut.size() : m_offset;
-		else
-			return m_streamSize;
-	}
-
-	void* buffer()
-	{
-		return m_buffer == nullptr ? m_spaceToPut.data() : m_buffer;
-	}
-
-	uint8_t direction() const { return m_direction; }
+    void doSerDeser(IBinarySerializable& object);
+    ByteStreamWrapper& operator&(IBinarySerializable& object);
+    ByteStreamWrapper& operator&(IBinarySerializable&& object);
 
 	template<typename T>
 	void doSerDeser(T& object)
@@ -88,7 +83,7 @@ public:
 			{
 				// We deal with fixed-size byte array
 				if (m_streamSize - m_offset < sizeof(T))
-					throw std::out_of_range("ByteStreamWrapper: Not enough space in byte stream");
+                    throw ByteStreamWrapper::out_of_range("ByteStreamWrapper: Not enough space in byte stream");
 				memcpy(&m_buffer[m_offset], &object, sizeof(T));
 				m_offset += sizeof(T);
 			} else {
@@ -101,48 +96,13 @@ public:
 
 		case fromBuffer:
 			if (m_streamSize - m_offset < sizeof(T))
-				throw std::out_of_range("ByteStreamWrapper: Stream tail is smaller than requested object");
+                throw ByteStreamWrapper::out_of_range("ByteStreamWrapper: Stream tail is smaller than requested object");
 			memcpy(&object, &m_buffer[m_offset], sizeof(T));
 			m_offset += sizeof(T);
 			break;
 
 		case sizeCalculator:
 			m_offset += sizeof(T);
-			break;
-		}
-	}
-
-	void doSerDeser(IBinarySerializable& object)
-	{
-		size_t objSize = object.size();
-		switch(m_direction)
-		{
-		case toBuffer:
-			if (m_streamSize != 0)
-			{
-				// We deal with fixed-size byte array
-				if (m_streamSize - m_offset < objSize)
-					throw std::out_of_range("ByteStreamWrapper: Not enough space in byte stream");
-
-				object.serialize(&m_buffer[m_offset]);
-				m_offset += objSize;
-			} else {
-				// We deal with vector
-				m_spaceToPut.resize(m_offset + objSize);
-				object.serialize(&m_spaceToPut[m_offset]);
-				m_offset += objSize;
-			}
-			break;
-
-		case fromBuffer:
-			if (m_streamSize - m_offset < objSize)
-				throw std::out_of_range("ByteStreamWrapper: Stream tail is smaller than requested object");
-			object.deserialize(&m_buffer[m_offset]);
-			m_offset += objSize;
-			break;
-
-		case sizeCalculator:
-			m_offset += objSize;
 			break;
 		}
 	}
@@ -154,17 +114,9 @@ public:
 		return *this;
 	}
 
-	ByteStreamWrapper& operator&(IBinarySerializable& object)
-	{
-		doSerDeser(object);
-		return *this;
-	}
+    friend std::ostream& lightser::operator<<(std::ostream& stream, const ByteStreamWrapper& obj);
 
-	ByteStreamWrapper& operator&(IBinarySerializable&& object)
-	{
-		doSerDeser(object);
-		return *this;
-	}
+    LIGHTSER_WRAP_STDEXCEPT(out_of_range);
 
 private:
 
@@ -174,7 +126,10 @@ private:
 	size_t m_offset = 0;
 
 	std::vector<uint8_t> m_spaceToPut;
+    std::vector<uint8_t> m_fileContents;
 };
+
+std::ostream& operator<<(std::ostream& stream, const ByteStreamWrapper& obj);
 
 class IBSWFriendly
 {
