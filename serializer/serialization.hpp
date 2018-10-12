@@ -114,7 +114,7 @@ public:
 		return *this;
 	}
 
-    friend std::ostream& lightser::operator<<(std::ostream& stream, const ByteStreamWrapper& obj);
+    friend std::ostream& operator<<(std::ostream& stream, const ByteStreamWrapper& obj);
 
     LIGHTSER_WRAP_STDEXCEPT(out_of_range);
 

@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 2.8)
 
 project(serialization-unit-tests)
 
-find_package (GTest REQUIRED)
 find_package (Threads)
 
 include_directories (
@@ -25,6 +24,4 @@ target_link_libraries (${PROJECT_NAME}
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_constexpr)
 
-add_test(NAME SerializerTests
-         COMMAND ${PROJECT_NAME})
-run_test(${PROJECT_NAME})
+add_test(NAME SerializerTests COMMAND ${PROJECT_NAME})
